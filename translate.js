@@ -27,10 +27,14 @@
 
             if ($children.size() > 0) {
                 $children.each(function(i) {
-                    $(this).text(translatedText[i]);
+                    $(this).html(translatedText[i]);
+                });
+            } else if ($element.size() > 0) {
+                $element.each(function(i) {
+                    $(this).html(translatedText[i]);
                 });
             } else {
-                $element.text(translatedText[0]);
+                $element.html(translatedText[0]);
             }
         },
         parseResonse: function(response) {
@@ -49,7 +53,7 @@
             progressIndicator.insertBefore($element);
         },
         removeProgress : function($element) {
-            progressIndicator.remove();
+            $element.prev().remove();
         }
     };
 
@@ -79,11 +83,11 @@
             'https://www.googleapis.com/language/translate/v2?q=' + toTranslate.join('&q='),
             $.translate
         ).done(function(res) {
+            methods.removeProgress($this);
             methods.done($this, methods.parseResonse(res));
         }).fail(function(res) {
-            $.error(res.responseText);
-        }).always(function() {
             methods.removeProgress($this);
+            $.error(res.responseText);
         });
     };
 

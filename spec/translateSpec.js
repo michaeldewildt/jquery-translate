@@ -89,7 +89,7 @@ describe("translating", function() {
 
         it("it should update the div with translated text", function() {
             var
-                html = $('<div><div class="a">Hello World!</div></div>');
+                html = $('<div><div class="a">Hello</div> <div class="a">World!</div></div>');
                 element = html.find('.a')
                 ;
 
@@ -98,13 +98,14 @@ describe("translating", function() {
                 target: 'de'
             });
 
-            expect(element.prev().text()).toEqual('Translating');
+            expect(html.find('.translating').size()).toEqual(2);
 
             mostRecentAjaxRequest().response({
                 status: 200,
-                responseText: '{"data": {"translations": [{"translatedText": "Hallo Welt!"}]}}'
+                responseText: '{"data": {"translations": [{"translatedText": "Hallo"},{"translatedText": "Welt!"}]}}'
             });
 
+            expect(html.find('.translating').size()).toEqual(0);
             expect(html.text()).toBe('Hallo Welt!');
         });
 
