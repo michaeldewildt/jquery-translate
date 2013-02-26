@@ -3,7 +3,8 @@
 
     $.translate = {};
 
-    var methods = {
+    var progressIndicator = $('<div class="translating">Translating</div>'),
+        methods = {
         collect : function($element) {
             var $children = $element.children(),
                 text = []
@@ -48,7 +49,10 @@
             return text;
         },
         showProgress : function($element) {
-            $element.text('Translating...');
+            progressIndicator.insertBefore($element);
+        },
+        removeProgress : function($element) {
+            progressIndicator.remove();
         }
     };
 
@@ -59,9 +63,20 @@
 
         $.translate = $.extend(options, $.translate);
 
+        if (typeof $.translate.progressIndicator !== 'undefined') {
+            if (typeof $.translate.progressIndicator === 'object') {
+                progressIndicator = $.translate.progressIndicator;
+            } else {
+                progressIndicator = $($.translate.progressIndicator);
+            }
+            delete $.translate.progressIndicator;
+        }
+
         var $this = this,
             toTranslate = methods.collect(this)
             ;
+
+        methods.showProgress($this);
 
         return $.get(
             'https://www.googleapis.com/language/translate/v2?q=' + toTranslate.join('&q='),
@@ -71,6 +86,8 @@
         }).fail(function(res) {
             methods.done($this, toTranslate);
             $.error(res.responseText);
+        }).always(function() {
+            methods.removeProgress($this);
         });
     };
 
