@@ -11,16 +11,13 @@
                 ;
 
             if ($children.size() > 0) {
-
                 $children.each(function() {
                     var $this = $(this);
 
-                    text.push($this.text().trim());
-                    methods.showProgress($this);
+                    text.push(encodeURIComponent($this.text().trim()));
                 });
             } else {
-                text.push($element.text().trim());
-                methods.showProgress($element);
+                text.push(encodeURIComponent($element.text().trim()));
             }
 
             return text;
@@ -84,7 +81,6 @@
         ).done(function(res) {
             methods.done($this, methods.parseResonse(res));
         }).fail(function(res) {
-            methods.done($this, toTranslate);
             $.error(res.responseText);
         }).always(function() {
             methods.removeProgress($this);
