@@ -153,6 +153,28 @@ describe("translating", function() {
             expect(html.text()).toBe('Hallo Welt!');
         });
 
+        it("it should fire an onComplete event", function() {
+            var
+                html = $('<div><div class="a">Hello World!</div></div>');
+                element = html.find('.a')
+                ;
+
+            element.translate({
+                source: 'en',
+                target: 'de',
+                onComplete: function() {
+                    element.text(element.text() + ' Done!');
+                }
+            });
+
+            mostRecentAjaxRequest().response({
+                status: 200,
+                responseText: '{"data": {"translations": [{"translatedText": "Hallo Welt!"}]}}'
+            });
+
+            expect(html.text()).toBe('Hallo Welt! Done!');
+        });
+
     });
 
 });

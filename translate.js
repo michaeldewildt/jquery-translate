@@ -4,6 +4,7 @@
     $.translate = {};
 
     var progressIndicator = $('<div class="translating">Translating</div>'),
+        onComplete = function() {},
         methods = {
         collect : function($element) {
             var $children = $element.children(),
@@ -54,6 +55,21 @@
         },
         removeProgress : function($element) {
             $element.prev().remove();
+        },
+        setDefaults : function() {
+            if (typeof $.translate.progressIndicator !== 'undefined') {
+                if (typeof $.translate.progressIndicator === 'object') {
+                    progressIndicator = $.translate.progressIndicator;
+                } else {
+                    progressIndicator = $($.translate.progressIndicator);
+                }
+                delete $.translate.progressIndicator;
+            }
+
+            if (typeof $.translate.onComplete !== 'undefined') {
+                onComplete = $.translate.onComplete;
+                delete $.translate.onComplete;
+            }
         }
     };
 
@@ -64,14 +80,7 @@
 
         $.translate = $.extend(options, $.translate);
 
-        if (typeof $.translate.progressIndicator !== 'undefined') {
-            if (typeof $.translate.progressIndicator === 'object') {
-                progressIndicator = $.translate.progressIndicator;
-            } else {
-                progressIndicator = $($.translate.progressIndicator);
-            }
-            delete $.translate.progressIndicator;
-        }
+        methods.setDefaults();
 
         var $this = this,
             toTranslate = methods.collect(this)
@@ -85,6 +94,7 @@
         ).done(function(res) {
             methods.removeProgress($this);
             methods.done($this, methods.parseResonse(res));
+            onComplete();
         }).fail(function(res) {
             methods.removeProgress($this);
             $.error(res.responseText);
