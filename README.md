@@ -29,8 +29,8 @@ Translating is simple, just use a selector to find your element and call transla
 
 ```js
 $(function () {
-    $('.translate').on('click', function() {
-        $('.single').translate({ target : 'fr' });
+    $('.translate-button').on('click', function() {
+        $('.translate-me').translate({ target : 'fr' });
     });
 });
 ```
