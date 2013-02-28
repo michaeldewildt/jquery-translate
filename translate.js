@@ -139,7 +139,7 @@
                 };
             })();
 
-        for (var i = 0; i < properties.textCollection.length; i++) {
+        for (var i in properties.textCollection) {
             requestPromises.push(ajaxRequest());
         }
 
