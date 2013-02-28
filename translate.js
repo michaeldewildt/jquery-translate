@@ -4,7 +4,7 @@
     $.translate = {};
 
     var properties = {
-        MAX_SIZE : 1500,
+        MAX_SIZE : 1000,
         progressIndicator : $('<div class="translating">Translating</div>')
     };
 
