@@ -3,74 +3,108 @@
 
     $.translate = {};
 
-    var progressIndicator = $('<div class="translating">Translating</div>'),
-        onComplete = function() {},
-        methods = {
-        collect : function($element) {
-            var $children = $element.children(),
-                text = []
-                ;
+    var properties = {
+        MAX_SIZE : 1500,
+        progressIndicator : $('<div class="translating">Translating</div>')
+    };
 
-            if ($children.size() > 0) {
-                $children.each(function() {
-                    var $this = $(this);
-
-                    text.push(encodeURIComponent($this.text().trim()));
-                });
-            } else {
-                text.push(encodeURIComponent($element.text().trim()));
+    var methods = {
+        push : function(text) {
+            properties.textSize += text.length;
+            if (properties.textSize > properties.MAX_SIZE) {
+                properties.textCollectionIndex++;
+                properties.textCollection[properties.textCollectionIndex] = [];
+                properties.textSize = text.length;
             }
 
-            return text;
+            properties.textCollection[properties.textCollectionIndex].push(encodeURIComponent(text));
         },
-        done : function($element, translatedText) {
+        collect : function($element) {
             var $children = $element.children();
 
             if ($children.size() > 0) {
+                $children.each(function() {
+                    methods.push($(this).text().trim());
+                });
+            } else if ($element.size() > 0) {
+                $element.each(function() {
+                    methods.push($(this).text().trim());
+                });
+            } else {
+                methods.push($element.text().trim());
+            }
+            return this;
+        },
+        done : function($element) {
+            var
+                $children = $element.children(),
+                text = []
+                ;
+
+            for (var i = 0; i <= properties.translatedTextCollection.length; i++) {
+                text = text.concat(properties.translatedTextCollection[i]);
+            }
+
+            if ($children.size() > 0) {
                 $children.each(function(i) {
-                    $(this).html(translatedText[i]);
+                    $(this).html(text[i]);
                 });
             } else if ($element.size() > 0) {
                 $element.each(function(i) {
-                    $(this).html(translatedText[i]);
+                    $(this).html(text[i]);
                 });
             } else {
-                $element.html(translatedText[0]);
+                $element.html(text[0]);
             }
-        },
-        parseResonse: function(response) {
-            var
-                text = [],
-                translations = response.data.translations
+
+            return this
+                .removeProgress($element)
+                .onComplete()
                 ;
+        },
+        parseResonse: function(index, response) {
+            var translations = response.data.translations;
 
+            properties.translatedTextCollection[index] = [];
             for (var i = 0; i < translations.length; i++) {
-                text.push(translations[i].translatedText);
+                properties.translatedTextCollection[index].push(translations[i].translatedText);
             }
 
-            return text;
+            return this;
         },
         showProgress : function($element) {
-            progressIndicator.insertBefore($element);
+            properties.progressIndicator.insertBefore($element);
+
+            return this;
         },
         removeProgress : function($element) {
             $element.prev().remove();
+
+            return this;
         },
         setDefaults : function() {
             if (typeof $.translate.progressIndicator !== 'undefined') {
                 if (typeof $.translate.progressIndicator === 'object') {
-                    progressIndicator = $.translate.progressIndicator;
+                    properties.progressIndicator = $.translate.progressIndicator;
                 } else {
-                    progressIndicator = $($.translate.progressIndicator);
+                    properties.progressIndicator = $($.translate.progressIndicator);
                 }
                 delete $.translate.progressIndicator;
             }
 
             if (typeof $.translate.onComplete !== 'undefined') {
-                onComplete = $.translate.onComplete;
+                methods.onComplete = $.translate.onComplete;
                 delete $.translate.onComplete;
             }
-        }
+
+            properties.translatedTextCollection = [];
+            properties.textCollection = [[]];
+            properties.textCollectionIndex = 0;
+            properties.textSize = 0;
+
+            return this;
+        },
+        onComplete : function() {}
     };
 
     $.fn.translate = function(options) {
@@ -80,24 +114,37 @@
 
         $.translate = $.extend(options, $.translate);
 
-        methods.setDefaults();
-
-        var $this = this,
-            toTranslate = methods.collect(this)
+        methods
+            .setDefaults()
+            .collect(this)
+            .showProgress(this)
             ;
 
-        methods.showProgress($this);
+        var
+            $this = this,
+            requestPromises = [],
+            ajaxRequest = (function() {
+                var count = 0;
+                return function() {
+                    var index = count++;
+                    return $.get(
+                        'https://www.googleapis.com/language/translate/v2?q=' + properties.textCollection[index].join('&q='),
+                        $.translate
+                    ).done(function(res) {
+                        methods.parseResonse(index, res);
+                    }).fail(function(res) {
+                        methods.removeProgress($this);
+                        $.error(res.responseText);
+                    });
+                };
+            })();
 
-        return $.get(
-            'https://www.googleapis.com/language/translate/v2?q=' + toTranslate.join('&q='),
-            $.translate
-        ).done(function(res) {
-            methods.removeProgress($this);
-            methods.done($this, methods.parseResonse(res));
-            onComplete();
-        }).fail(function(res) {
-            methods.removeProgress($this);
-            $.error(res.responseText);
+        for (var i = 0; i < properties.textCollection.length; i++) {
+            requestPromises.push(ajaxRequest());
+        }
+
+        return $.when.apply($, requestPromises).then(function () {
+            methods.done($this);
         });
     };
 
